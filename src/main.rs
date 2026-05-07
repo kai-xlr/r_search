@@ -2,21 +2,7 @@ use std::env;
 use std::fs;
 use std::process;
 
-fn search(query: &str, contents: &str) -> bool {
-    let query = query.to_lowercase();
-    let mut found = false;
-
-    for (i, line) in contents.lines().enumerate() {
-        if line.to_lowercase().contains(&query) {
-            println!("{}: {}", i + 1, line);
-            found = true;
-        }
-    }
-
-    found
-}
-
-fn main() {
+fn parse_args() -> (String, String) {
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 3 {
@@ -24,17 +10,40 @@ fn main() {
         process::exit(1);
     }
 
-    let query = &args[1];
-    let file_path = &args[2];
+    (args[1].clone(), args[2].clone())
+}
 
-    let contents = match fs::read_to_string(file_path) {
-        Ok(data) => data,
-        Err(e) => {
-            eprintln!("Error: Could not read file '{}': {}", file_path, e);
-            process::exit(1);
+fn read_file(file_path: &str) -> String {
+    fs::read_to_string(file_path).unwrap_or_else(|e| {
+        eprintln!("Error: Could not read file '{}': {}", file_path, e);
+        process::exit(1);
+    })
+}
+
+fn search(query: &str, contents: &str) -> Vec<(usize, String)> {
+    let query = query.to_lowercase();
+    let mut results = Vec::new();
+
+    for (i, line) in contents.lines().enumerate() {
+        if line.to_lowercase().contains(&query) {
+            results.push((i + 1, line.to_string()));
         }
-    };
+    }
 
-    search(query, &contents);
-    // success → implicit exit(0)
+    results
+}
+
+fn run() {
+    let (query, file_path) = parse_args();
+    let contents = read_file(&file_path);
+
+    let results = search(&query, &contents);
+
+    for (line_num, line) in results {
+        println!("{}: {}", line_num, line);
+    }
+}
+
+fn main() {
+    run();
 }

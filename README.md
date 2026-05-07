@@ -13,6 +13,12 @@ Example:
 cargo run -- hello file.txt
 ```
 
+## Features
+
+- Case-insensitive search
+- Line numbers displayed for matching lines
+- Error handling for missing arguments or unreadable files
+
 ## About
 
-Searches for a case-insensitive query string within a text file and prints matching lines with line numbers.
+Searches for a query string within a text file and prints matching lines with line numbers. Exits with code 1 on error (missing arguments or file read failure).

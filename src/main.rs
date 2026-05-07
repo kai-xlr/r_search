@@ -1,49 +1,47 @@
-use std::env;
-use std::fs;
-use std::process;
+mod routes;
+mod utils;
 
-fn parse_args() -> (String, String) {
-    let args: Vec<String> = env::args().collect();
+use std::io::{Read, Write};
+use std::net::{TcpListener, TcpStream};
 
-    if args.len() < 3 {
-        eprintln!("Usage: cargo run -- <query> <file_path>");
-        process::exit(1);
-    }
+fn handle_connection(mut stream: TcpStream) {
+    println!("[CONNECTION] accepted");
+    let mut buffer = [0; 1024];
 
-    (args[1].clone(), args[2].clone())
-}
+    match stream.read(&mut buffer) {
+        Ok(size) if size > 0 => {
+            let request_str = String::from_utf8_lossy(&buffer[..size]);
 
-fn read_file(file_path: &str) -> String {
-    fs::read_to_string(file_path).unwrap_or_else(|e| {
-        eprintln!("Error: Could not read file '{}': {}", file_path, e);
-        process::exit(1);
-    })
-}
+            // Log the incoming request line
+            if let Some(line) = request_str.lines().next() {
+                println!("[REQUEST] {}", line);
+            }
 
-fn search(query: &str, contents: &str) -> Vec<(usize, String)> {
-    let query = query.to_lowercase();
-    let mut results = Vec::new();
+            // Route and handle validation results
+            let (status, response) = routes::route_request(&request_str);
+            println!("[RESPONSE] {}", status);
 
-    for (i, line) in contents.lines().enumerate() {
-        if line.to_lowercase().contains(&query) {
-            results.push((i + 1, line.to_string()));
+            if let Err(e) = stream.write_all(response.as_bytes()) {
+                eprintln!("[ERROR] Failed to write response: {}", e);
+                return;
+            }
+
+            if let Err(e) = stream.flush() {
+                eprintln!("[ERROR] Failed to flush stream: {}", e);
+            }
         }
-    }
-
-    results
-}
-
-fn run() {
-    let (query, file_path) = parse_args();
-    let contents = read_file(&file_path);
-
-    let results = search(&query, &contents);
-
-    for (line_num, line) in results {
-        println!("{}: {}", line_num, line);
+        Ok(_) => {}
+        Err(e) => eprintln!("[ERROR] Failed to read from stream: {}", e),
     }
 }
 
-fn main() {
-    run();
+fn main() -> std::io::Result<()> {
+    let listener = TcpListener::bind("127.0.0.1:8080")?;
+    println!("Server listening on http://127.0.0.1:8080");
+
+    for stream in listener.incoming().flatten() {
+        handle_connection(stream);
+    }
+
+    Ok(())
 }

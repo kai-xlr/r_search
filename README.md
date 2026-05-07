@@ -1,24 +1,25 @@
 # r_search
 
-A simple command-line search tool written in Rust.
+A minimal HTTP server written in Rust.
 
 ## Usage
 
 ```bash
-cargo run -- <query> <file_path>
+cargo run
 ```
 
-Example:
-```bash
-cargo run -- hello file.txt
-```
+Server starts on `http://127.0.0.1:8080`.
+
+## Routes
+
+| Method | Path              | Response          |
+|--------|-------------------|-------------------|
+| GET    | `/health`         | `OK`              |
+| GET    | `/echo/<message>` | `<message>`       |
+| GET    | `*`               | `404 Not Found`   |
 
 ## Features
 
-- Case-insensitive search
-- Line numbers displayed for matching lines
-- Error handling for missing arguments or unreadable files
-
-## About
-
-Searches for a query string within a text file and prints matching lines with line numbers. Exits with code 1 on error (missing arguments or file read failure).
+- TCP-based HTTP server with zero external dependencies
+- Routing with health check and echo endpoints
+- Error handling for malformed requests (400 Bad Request)
